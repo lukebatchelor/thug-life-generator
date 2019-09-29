@@ -8,6 +8,14 @@
   text-align: center;
 }
 
+@font-face {
+  font-family: 'Germanica';
+  src: url('/Germanica.woff') format('woff'), /* Pretty Modern Browsers */ url('/Germanica.ttf') format('truetype'); /* Safari, Android, iOS */
+}
+
+body {
+  font-family: 'Germanica', Fallback, sans-serif;
+}
 .app h1:first-of-type {
   margin-bottom: 0px;
 }

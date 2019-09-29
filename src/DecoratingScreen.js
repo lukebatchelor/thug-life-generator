@@ -1,5 +1,5 @@
 import React from 'react';
-import { fabric } from './gif/fabric3.min.js';
+import { fabric } from './gif/fabric2.min.js';
 console.log(fabric);
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -103,25 +103,33 @@ export default class DecoratingScreen extends React.Component {
       fabricCanvas.add(fabricJointImg);
     });
 
-    fabric.util.loadImage('/text.png', textImg => {
-      const { width: textWidth, height: textHeight } = textImg;
-      const expectedWidth = imgWidth / 4;
-      const expectedHeight = imgHeight / 10;
-      const scaleX = expectedWidth / textWidth;
-      const scaleY = expectedHeight / textHeight;
-      const defaultX = imgWidth / 3 + expectedWidth / 2;
-      const defaultY = (imgHeight / 5) * 3 + expectedHeight / 2;
+    ctx.font = '68px Germanica';
+    ctx.fillStyle = '#ffffff';
+    var text = new fabric.Text('Thug Life', { left: 100, top: 100, fontFamily: 'Germanica', fill: 'white' });
+    fabricCanvas.add(text);
 
-      const fabricTextImg = new ImageWithBorder(textImg, {
-        scaleX,
-        scaleY,
-        top: defaultY,
-        left: defaultX,
-        borderColor: 'red',
-        cornerColor: 'red'
-      });
-      fabricCanvas.add(fabricTextImg);
-    });
+    // fabric.util.loadImage('/textWhite.svg', textImg => {
+    //   const { width: textWidth, height: textHeight } = textImg;
+    //   const expectedWidth = imgWidth / 4;
+    //   const expectedHeight = imgHeight / 10;
+    //   const scaleX = expectedWidth / textWidth;
+    //   const scaleY = expectedHeight / textHeight;
+    //   const defaultX = imgWidth / 3 + expectedWidth / 2;
+    //   const defaultY = (imgHeight / 5) * 3 + expectedHeight / 2;
+
+    //   const fabricTextImg = new ImageWithBorder(textImg, {
+    //     scaleX,
+    //     scaleY,
+    //     top: defaultY,
+    //     left: defaultX,
+    //     borderColor: 'red',
+    //     cornerColor: 'red'
+    //   });
+    //   console.log(fabricTextImg);
+    //   // fabricTextImg.paths.forEach(path => (path.fill = 'white'));
+    //   fabricCanvas.add(fabricTextImg);
+    //   fabricCanvas.renderAll();
+    // });
   }
 
   render() {
