@@ -1,42 +1,40 @@
 import React from 'react';
+
 import { fabric } from './gif/fabric2.min.js';
-console.log(fabric);
 
 const urlParams = new URLSearchParams(window.location.search);
 const maxSizeParam = urlParams.get('max');
 
 const MAX_IMAGE_DIMENSION = maxSizeParam ? parseInt(maxSizeParam) : 500;
 
-const ImageWithBorder = fabric.util.createClass(fabric.Image, {
-  type: 'ImageWithBorder',
-  _render: function(ctx) {
-    this.callSuper('_render', ctx);
-    ctx.strokeStyle = '#FF0000';
-    ctx.lineWidth = 10;
-    ctx.strokeRect(-this.width / 2, -this.height / 2, this.width, this.height);
-  }
-});
+// const ImageWithBorder = fabric.util.createClass(fabric.Image, {
+//   type: 'ImageWithBorder',
 
-// We need to set a max size of the outputted image for a couple of reasons:
-// 1. It makes moving homer on the image super annoying because of the sheer
-//    number of pixels (especially is screen shots from high dpi screens)
-// 2. Outputting takes ages (and results in a massive gif)
-// 3. Scaling homer to _fit_ on a massive image makes him look terrible
-// So we set a max size and scale the src image based on that
-function getCalculatedImageHeight(uploadedImg) {
-  const { height, width } = uploadedImg;
-  if (height < MAX_IMAGE_DIMENSION && width < MAX_IMAGE_DIMENSION) {
-    return { imgHeight: height, imgWidth: width };
+//   _render: function(ctx) {
+//     this.callSuper('_render', ctx);
+//     ctx.strokeStyle = '#FF0000';
+//     ctx.lineWidth = 10;
+//     ctx.strokeRect(-this.width / 2, -this.height / 2, this.width, this.height);
+//   }
+// });
+
+// Pass in an img and a max size, returns the new height and width of that img
+// such that neither dimension exceeds maxSize, but the image keeps the same
+// ratio.
+function getClampedHeightAndWidth(img, maxSize) {
+  const { height, width } = img;
+  if (height < maxSize && width < maxSize) {
+    return { newHeight: height, newWidth: width };
   }
 
-  const xScaling = width > MAX_IMAGE_DIMENSION ? MAX_IMAGE_DIMENSION / width : 1;
-  const yScaling = height > MAX_IMAGE_DIMENSION ? MAX_IMAGE_DIMENSION / height : 1;
+  const xScaling = width > maxSize ? maxSize / width : 1;
+  const yScaling = height > maxSize ? maxSize / height : 1;
   // We want to scale both dimensions evenly, so take the biggest scaling factor
   const maxScaling = Math.min(xScaling, yScaling);
   const newWidth = Math.round(width * maxScaling);
   const newHeight = Math.round(height * maxScaling);
 
-  return { imgWidth: newWidth, imgHeight: newHeight };
+  return { newWidth, newHeight };
 }
 
 export default class DecoratingScreen extends React.Component {
@@ -46,91 +44,88 @@ export default class DecoratingScreen extends React.Component {
   componentDidMount() {
     const { uploadedImg } = this.props;
     const { width: realWidth, height: realHeight } = uploadedImg;
-    const { imgWidth, imgHeight } = getCalculatedImageHeight(uploadedImg);
-    const scaleX = imgWidth / realWidth;
-    const scaleY = imgHeight / realHeight;
+    const { newWidth: imgWidth, newHeight: imgHeight } = getClampedHeightAndWidth(uploadedImg, MAX_IMAGE_DIMENSION);
+
     const fabricCanvas = new fabric.Canvas('decoratingCanvas', { height: imgHeight, width: imgWidth });
     this.fabricCanvas = fabricCanvas;
-    const ctx = fabricCanvas.getContext();
 
+    const scaleX = imgWidth / realWidth;
+    const scaleY = imgHeight / realHeight;
     const fabricBackgroundImg = new fabric.Image(uploadedImg, {
       scaleX,
       scaleY,
       lockMovementX: true,
       lockMovementY: true,
       selectable: false,
-      hoverCursor: 'default'
+      hoverCursor: 'default',
+      name: 'background'
     });
     fabricCanvas.add(fabricBackgroundImg);
 
     fabric.util.loadImage('/glasses.png', glassesImg => {
-      const { width: glassesWidth, height: glassesHeight } = glassesImg;
-      const expectedWidth = imgWidth / 4;
-      const expectedHeight = imgHeight / 10;
-      const scaleX = expectedWidth / glassesWidth;
-      const scaleY = expectedHeight / glassesHeight;
-      const defaultX = imgWidth / 3 + expectedWidth / 2;
-      const defaultY = imgHeight / 5 + expectedHeight / 2;
+      const { width: glassesRealWidth, height: glassesRealHeight } = glassesImg;
+      const { newWidth: glassesNewWidth, newHeight: glassesNewHeight } = getClampedHeightAndWidth(
+        glassesImg,
+        MAX_IMAGE_DIMENSION / 3 // glasses image should be about 1 / 3 size of background
+      );
 
-      const fabricGlassesImg = new ImageWithBorder(glassesImg, {
+      const scaleX = glassesNewWidth / glassesRealWidth;
+      const scaleY = glassesNewHeight / glassesRealHeight;
+      const defaultX = imgWidth / 2;
+      const defaultY = imgHeight / 3;
+
+      const fabricGlassesImg = new fabric.Image(glassesImg, {
         scaleX,
         scaleY,
         top: defaultY,
         left: defaultX,
         borderColor: 'red',
-        cornerColor: 'red'
+        cornerColor: 'red',
+        originX: 'center',
+        originY: 'center',
+        name: 'glasses'
       });
       fabricCanvas.add(fabricGlassesImg);
     });
 
     fabric.util.loadImage('/joint.png', jointImg => {
-      const { width: jointWidth, height: jointHeight } = jointImg;
-      const expectedWidth = imgWidth / 4;
-      const expectedHeight = imgHeight / 10;
-      const scaleX = expectedWidth / jointWidth;
-      const scaleY = expectedHeight / jointHeight;
-      const defaultX = imgWidth / 3 + expectedWidth / 2;
-      const defaultY = (imgHeight / 5) * 3 + expectedHeight / 2;
+      const { width: jointRealWidth, height: jointRealHeight } = jointImg;
+      const { newWidth: jointNewWidth, newHeight: jointNewHeight } = getClampedHeightAndWidth(
+        jointImg,
+        MAX_IMAGE_DIMENSION / 4 // joint image should be about 1 / 4 size of background
+      );
+      const scaleX = jointNewWidth / jointRealWidth;
+      const scaleY = jointNewHeight / jointRealHeight;
+      const defaultX = imgWidth / 2;
+      const defaultY = imgHeight / 2;
 
-      const fabricJointImg = new ImageWithBorder(jointImg, {
+      const fabricJointImg = new fabric.Image(jointImg, {
         scaleX,
         scaleY,
         top: defaultY,
         left: defaultX,
         borderColor: 'red',
-        cornerColor: 'red'
+        cornerColor: 'red',
+        originX: 'center',
+        originY: 'center'
       });
       fabricCanvas.add(fabricJointImg);
     });
 
-    ctx.font = '68px Germanica';
-    ctx.fillStyle = '#ffffff';
-    var text = new fabric.Text('Thug Life', { left: 100, top: 100, fontFamily: 'Germanica', fill: 'white' });
+    var text = new fabric.Text('Thug Life', {
+      left: imgWidth / 2,
+      top: (imgHeight / 6) * 5,
+      fontFamily: 'Germanica',
+      fill: 'white',
+      originX: 'center',
+      originY: 'center'
+    });
     fabricCanvas.add(text);
-
-    // fabric.util.loadImage('/textWhite.svg', textImg => {
-    //   const { width: textWidth, height: textHeight } = textImg;
-    //   const expectedWidth = imgWidth / 4;
-    //   const expectedHeight = imgHeight / 10;
-    //   const scaleX = expectedWidth / textWidth;
-    //   const scaleY = expectedHeight / textHeight;
-    //   const defaultX = imgWidth / 3 + expectedWidth / 2;
-    //   const defaultY = (imgHeight / 5) * 3 + expectedHeight / 2;
-
-    //   const fabricTextImg = new ImageWithBorder(textImg, {
-    //     scaleX,
-    //     scaleY,
-    //     top: defaultY,
-    //     left: defaultX,
-    //     borderColor: 'red',
-    //     cornerColor: 'red'
-    //   });
-    //   console.log(fabricTextImg);
-    //   // fabricTextImg.paths.forEach(path => (path.fill = 'white'));
-    //   fabricCanvas.add(fabricTextImg);
-    //   fabricCanvas.renderAll();
-    // });
   }
+
+  onReadyClicked = () => {
+    this.props.onReadyClicked(this.fabricCanvas.toJSON());
+  };
 
   render() {
     return (

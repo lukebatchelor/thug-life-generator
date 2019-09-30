@@ -1,8 +1,11 @@
 import React from 'react';
+
 import UploadScreen from './UploadScreen';
 import DecoratingScreen from './DecoratingScreen';
 import ExportingScreen from './ExportingScreen';
 import './App.css';
+
+import fontFaceObserver from './gif/fontFaceObserver.js';
 
 const urlParams = new URLSearchParams(window.location.search);
 
@@ -13,7 +16,8 @@ export default class App extends React.Component {
     curScreen: 'UPLOAD',
     uploadedImg: null,
     canvasWidth: 0,
-    canvasHeight: 0
+    canvasHeight: 0,
+    customFontLoaded: false
   };
 
   componentDidMount() {
@@ -31,6 +35,10 @@ export default class App extends React.Component {
       };
       img.src = '/selfie.jpg';
     }
+
+    new fontFaceObserver('Germanica').load().then(a => {
+      this.setState({ customFontLoaded: true });
+    });
   }
 
   onImageUploaded = img => {
@@ -56,15 +64,21 @@ export default class App extends React.Component {
     this.setState({ curScreen: 'UPLOAD', uploadedImg: null });
   };
 
+  onDecorateReady = json => {
+    console.log(json);
+  };
+
   render() {
-    const { curScreen, uploadedImg, canvasWidth, canvasHeight } = this.state;
+    const { curScreen, uploadedImg, canvasWidth, canvasHeight, customFontLoaded } = this.state;
 
     return (
       <div className="app">
         <div className="content">
           {curScreen === 'UPLOAD' && <UploadScreen onImageUploaded={this.onImageUploaded} />}
-          {curScreen === 'DECORATING' && <DecoratingScreen uploadedImg={uploadedImg} onDecorateReady={() => {}} />}
-          {curScreen === 'EXPORTING' && (
+          {customFontLoaded && curScreen === 'DECORATING' && (
+            <DecoratingScreen uploadedImg={uploadedImg} onReadyClicked={this.onDecorateReady} />
+          )}
+          {customFontLoaded && curScreen === 'EXPORTING' && (
             <ExportingScreen
               uploadedImg={uploadedImg}
               canvasWidth={canvasWidth}
